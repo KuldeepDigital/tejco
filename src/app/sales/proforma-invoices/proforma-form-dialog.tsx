@@ -34,6 +34,7 @@ export function ProformaFormDialog({ open, onOpenChange, proforma, onSave }: Pro
   const [users, setUsers] = useState<any[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [currencies, setCurrencies] = useState<string[]>(["USD", "EUR", "GBP"])
+  const [sameAsBilling, setSameAsBilling] = useState<boolean>(true)
 
   useEffect(() => {
     const fetchCurrencies = async () => {
@@ -88,6 +89,8 @@ export function ProformaFormDialog({ open, onOpenChange, proforma, onSave }: Pro
   // Populate form when dialog opens
   useEffect(() => {
     if (proforma) {
+      const isSame = !proforma.shippingAddress || proforma.shippingAddress === proforma.billingAddress
+      setSameAsBilling(isSame)
       const sanitizedItems = (proforma.items || []).map((item: any) => {
         const rawVid = item.variantId !== undefined ? item.variantId : item.variant_id
         const parsedVid = rawVid !== null && rawVid !== undefined && !isNaN(Number(rawVid)) ? Number(rawVid) : null
@@ -119,6 +122,7 @@ export function ProformaFormDialog({ open, onOpenChange, proforma, onSave }: Pro
         freight: Number((proforma as any).freight) || 0,
       })
     } else {
+      setSameAsBilling(true)
       const year = new Date().getFullYear()
       const random = Math.floor(1000 + Math.random() * 9000)
       const currentUserName = user?.name || `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || ""
@@ -134,7 +138,6 @@ export function ProformaFormDialog({ open, onOpenChange, proforma, onSave }: Pro
         taxAmount: 0,
         freight: 0,
         totalAmount: 0,
-        validityDays: 7,
         deliveryTime: "10-15 Working Days",
         deliveryTerms: "10-15 Working Days",
         paymentTerms: "",
@@ -608,6 +611,12 @@ export function ProformaFormDialog({ open, onOpenChange, proforma, onSave }: Pro
         ? serializeAddress(form.billingAddress)
         : (typeof form.billingAddress === "string" ? form.billingAddress : "")
 
+      const resolvedShippingAddress = sameAsBilling
+        ? resolvedBillingAddress
+        : (typeof form.shippingAddress === "object"
+          ? serializeAddress(form.shippingAddress)
+          : (typeof form.shippingAddress === "string" ? form.shippingAddress : resolvedBillingAddress))
+
       const year = new Date().getFullYear()
       const random = Math.floor(1000 + Math.random() * 9000)
 
@@ -620,6 +629,7 @@ export function ProformaFormDialog({ open, onOpenChange, proforma, onSave }: Pro
         clientId: resolvedClientId,
         billingName: form.billingName || form.clientName || targetClientName || "",
         billingAddress: resolvedBillingAddress,
+        shippingAddress: resolvedShippingAddress,
         freight: Number(form.freight) || 0,
         totalAmount: Number(form.totalAmount) || 0,
         deliveryTerms: form.deliveryTerms || form.deliveryTime || "10-15 Working Days",
@@ -690,7 +700,7 @@ export function ProformaFormDialog({ open, onOpenChange, proforma, onSave }: Pro
         <div className="flex-1 p-6 overflow-y-auto max-h-[calc(95vh-140px)]">
           <div className="space-y-6 pb-6">
             {/* Header Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label>PI Number</Label>
                 <Input value={form.number || ""} disabled className="bg-muted" />
@@ -698,10 +708,6 @@ export function ProformaFormDialog({ open, onOpenChange, proforma, onSave }: Pro
               <div className="space-y-2">
                 <Label>Date</Label>
                 <Input type="date" value={form.date ? form.date.split("T")[0] : ""} onChange={(e) => set("date", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Validity (Days)</Label>
-                <Input type="number" min={1} value={form.validityDays ?? 7} onChange={(e) => set("validityDays", parseInt(e.target.value) || 7)} />
               </div>
             </div>
 
@@ -714,12 +720,16 @@ export function ProformaFormDialog({ open, onOpenChange, proforma, onSave }: Pro
                   selectedClientName={form.clientName || form.billingName}
                   onSelect={(c) => {
                     const cid = c.id && !isNaN(Number(c.id)) && Number(c.id) > 0 ? String(c.id) : ""
+                    const bAddr = serializeAddress(c.billingAddress)
+                    const sAddr = serializeAddress(c.shippingAddress)
+                    const isSame = !sAddr || sAddr === bAddr
+                    setSameAsBilling(isSame)
                     set("clientId", cid)
                     set("clientName", c.name)
                     set("billingName", c.name)
                     set("clientMobileNo", c.phone || "")
-                    set("billingAddress", serializeAddress(c.billingAddress))
-                    set("shippingAddress", serializeAddress(c.shippingAddress))
+                    set("billingAddress", bAddr)
+                    set("shippingAddress", isSame ? bAddr : sAddr)
                     set("gstinNo", c.gstin || "")
                     set("clientGSTIN", c.gstin || "")
                     set("doctorSpeciality", Array.isArray((c as any).doctorSpeciality) ? (c as any).doctorSpeciality.join(", ") : ((c as any).doctorSpeciality || (c as any).speciality || (c as any).clientType || form.doctorSpeciality || ""))
@@ -996,14 +1006,45 @@ export function ProformaFormDialog({ open, onOpenChange, proforma, onSave }: Pro
                   <Textarea
                     placeholder="Full billing address..."
                     value={typeof form.billingAddress === "object" ? "" : (form.billingAddress as string || "")}
-                    onChange={(e) => set("billingAddress", e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setForm(prev => ({
+                        ...prev,
+                        billingAddress: val,
+                        ...(sameAsBilling ? { shippingAddress: val } : {})
+                      }))
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Shipping Address</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>Shipping Address</Label>
+                    <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-primary focus:ring-primary h-3.5 w-3.5"
+                        checked={sameAsBilling}
+                        onChange={(e) => {
+                          const checked = e.target.checked
+                          setSameAsBilling(checked)
+                          if (checked) {
+                            setForm(prev => ({
+                              ...prev,
+                              shippingAddress: typeof prev.billingAddress === "string" ? prev.billingAddress : ""
+                            }))
+                          }
+                        }}
+                      />
+                      Shipping address is same as billing address
+                    </label>
+                  </div>
                   <Textarea
                     placeholder="Full shipping address..."
-                    value={typeof form.shippingAddress === "object" ? "" : (form.shippingAddress as string || "")}
+                    disabled={sameAsBilling}
+                    value={sameAsBilling
+                      ? (typeof form.billingAddress === "object" ? "" : (form.billingAddress as string || ""))
+                      : (typeof form.shippingAddress === "object" ? "" : (form.shippingAddress as string || ""))
+                    }
                     onChange={(e) => set("shippingAddress", e.target.value)}
                   />
                 </div>

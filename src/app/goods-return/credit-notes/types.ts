@@ -17,6 +17,7 @@ export interface CreditNote {
   creditNoteNumber: string
   orderId: number
   orderNumber?: string | null
+  returnId?: number | null
   clientId: number
   clientName?: string | null
   totalCreditAmount: number

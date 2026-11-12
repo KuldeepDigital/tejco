@@ -567,7 +567,12 @@ export default function OrdersPage() {
                 orders.map((order) => (
                   <TableRow key={order.id || (order as any).orderId} className="hover:bg-slate-50/80 transition-colors">
                     <TableCell className="font-medium font-mono text-primary text-xs">
-                      {order.orderNumber}
+                      <div>{order.orderNumber}</div>
+                      {order.sourceLead && (
+                        <div className="text-[10px] font-sans font-medium text-indigo-600 bg-indigo-50 rounded px-1.5 py-0.5 inline-block mt-0.5 border border-indigo-100">
+                          {order.sourceLead}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="font-medium text-xs">
                       <div className="font-semibold text-slate-900">{order.clientName}</div>

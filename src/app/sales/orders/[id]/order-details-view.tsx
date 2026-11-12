@@ -319,6 +319,11 @@ export function OrderDetailsView({ order: initialOrder }: OrderDetailsViewProps)
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold tracking-tight">{order.orderNumber}</h1>
                 {getStatusBadge(order.status)}
+                {order.sourceLead && (
+                  <Badge variant="outline" className="border-indigo-200 bg-indigo-50 text-indigo-700 text-xs">
+                    Lead: {order.sourceLead}
+                  </Badge>
+                )}
               </div>
               <p className="text-muted-foreground">
                 Order placed on {new Date(order.date).toLocaleDateString("en-GB")} for {order.clientName}
@@ -681,6 +686,12 @@ export function OrderDetailsView({ order: initialOrder }: OrderDetailsViewProps)
                   <span className="text-slate-600 font-medium">Payment Status:</span>
                   <span className="font-semibold text-slate-900">{order.paymentStatus}</span>
                 </div>
+                {order.sourceLead && (
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-600 font-medium">Source Lead:</span>
+                    <span className="font-semibold text-slate-900">{order.sourceLead}</span>
+                  </div>
+                )}
                 {order.quotationId && (
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-600 font-medium">Linked Quote:</span>

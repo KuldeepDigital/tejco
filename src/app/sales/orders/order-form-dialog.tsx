@@ -27,6 +27,17 @@ interface OrderFormDialogProps {
 
 const GST_RATES = [0, 5, 12, 18, 28]
 
+const SOURCE_LEAD_OPTIONS = [
+  "Direct Call",
+  "Website / Portal",
+  "Doctor Referral",
+  "Exhibition / Conference",
+  "Field Sales Visit",
+  "WhatsApp",
+  "Quotation",
+  "Proforma Invoice",
+] as const
+
 export function OrderFormDialog({ open, onOpenChange, order, onSave }: OrderFormDialogProps) {
   const { user } = useAuth()
   const [form, setForm] = useState<Partial<Order>>({})
@@ -36,6 +47,7 @@ export function OrderFormDialog({ open, onOpenChange, order, onSave }: OrderForm
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [proformas, setProformas] = useState<any[]>([])
   const [loadingLinked, setLoadingLinked] = useState(false)
+  const [sameAsBilling, setSameAsBilling] = useState<boolean>(true)
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -134,9 +146,13 @@ export function OrderFormDialog({ open, onOpenChange, order, onSave }: OrderForm
     const initForm = async () => {
       if (order) {
         const isForeign = (order as any).paymentType === "Foreign"
+        const isSame = !order.shippingAddress || order.shippingAddress === order.billingAddress
+        setSameAsBilling(isSame)
+        const defaultSourceLead = (order as any).sourceLead || ((order as any).quotationId ? "Quotation" : ((order as any).proformaId ? "Proforma Invoice" : "Direct Call"))
 
         let initialForm = {
           ...order,
+          sourceLead: defaultSourceLead,
           paymentType: (order as any).paymentType || "Domestic",
           currencyType: (order as any).currencyType || "INR",
           doctorSpeciality: (order as any).doctorSpeciality || "",
@@ -224,6 +240,7 @@ export function OrderFormDialog({ open, onOpenChange, order, onSave }: OrderForm
           console.error("Error initializing order form details:", err)
         }
       } else {
+        setSameAsBilling(true)
         const currentUserName = user?.name || `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || ""
         const currentUserCell = user?.phone || user?.mobile || user?.mobileNumber || ""
         const currentUserId = user?.userId !== undefined ? String(user.userId) : (user?.id !== undefined ? String(user.id) : undefined)
@@ -233,6 +250,7 @@ export function OrderFormDialog({ open, onOpenChange, order, onSave }: OrderForm
           date: new Date().toISOString().split('T')[0],
           status: "Pending",
           paymentStatus: "Unpaid",
+          sourceLead: "Direct Call",
           paymentType: "Domestic",
           currencyType: "INR",
           doctorSpeciality: "",
@@ -422,7 +440,8 @@ export function OrderFormDialog({ open, onOpenChange, order, onSave }: OrderForm
         salesPersonCell: (form as any).salesPersonCell || "",
         billingAddress: form.billingAddress || "",
         status: form.status || "Pending",
-        shippingAddress: form.shippingAddress || form.billingAddress || "",
+        shippingAddress: sameAsBilling ? (form.billingAddress || "") : (form.shippingAddress || form.billingAddress || ""),
+        sourceLead: (form as any).sourceLead || ((form as any).quotationId ? "Quotation" : ((form as any).proformaId ? "Proforma Invoice" : "Direct Call")),
         subtotal: form.subtotal || 0,
         gstAmount: form.taxAmount || 0,
         freight: Number((form as any).freight || (order as any)?.freight || 0),
@@ -593,12 +612,16 @@ export function OrderFormDialog({ open, onOpenChange, order, onSave }: OrderForm
                   selectedClientId={form.clientId}
                   selectedClientName={form.clientName}
                   onSelect={(c) => {
+                    const bAddr = serializeAddress(c.billingAddress)
+                    const sAddr = serializeAddress(c.shippingAddress)
+                    const isSame = !sAddr || sAddr === bAddr
+                    setSameAsBilling(isSame)
                     setForm(prev => ({
                       ...prev,
                       clientId: c.id,
                       clientName: c.name,
-                      billingAddress: serializeAddress(c.billingAddress),
-                      shippingAddress: serializeAddress(c.shippingAddress),
+                      billingAddress: bAddr,
+                      shippingAddress: isSame ? bAddr : sAddr,
                       gstinNo: c.gstin || "",
                       clientGSTIN: c.gstin || "",
                       doctorSpeciality: (c as any).doctorSpeciality || (c as any).speciality || (c as any).clientType || prev.doctorSpeciality || "",
@@ -635,8 +658,8 @@ export function OrderFormDialog({ open, onOpenChange, order, onSave }: OrderForm
               </div>
             </div>
 
-            {/* Doctor Speciality & Client GSTIN */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Doctor Speciality, Client GSTIN & Source Lead */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label>Doctor Speciality</Label>
                 <Input
@@ -657,6 +680,24 @@ export function OrderFormDialog({ open, onOpenChange, order, onSave }: OrderForm
                   placeholder="GSTIN Number"
                   className="border-slate-200"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Source Lead</Label>
+                <Select
+                  value={(form as any).sourceLead || "Direct Call"}
+                  onValueChange={(val) => set("sourceLead" as any, val)}
+                >
+                  <SelectTrigger className="border-slate-200 w-full">
+                    <SelectValue placeholder="Select Source Lead" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SOURCE_LEAD_OPTIONS.map((lead) => (
+                      <SelectItem key={lead} value={lead}>
+                        {lead}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -873,17 +914,42 @@ export function OrderFormDialog({ open, onOpenChange, order, onSave }: OrderForm
                   <Textarea
                     placeholder="Full billing address..."
                     rows={2}
-                    value={form.billingAddress}
-                    onChange={(e) => set("billingAddress", e.target.value)}
+                    value={form.billingAddress || ""}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setForm(prev => ({
+                        ...prev,
+                        billingAddress: val,
+                        ...(sameAsBilling ? { shippingAddress: val } : {})
+                      }))
+                    }}
                     className="border-slate-200"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Shipping Address</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold text-slate-700">Shipping Address</Label>
+                    <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-primary focus:ring-primary h-3.5 w-3.5"
+                        checked={sameAsBilling}
+                        onChange={(e) => {
+                          const checked = e.target.checked
+                          setSameAsBilling(checked)
+                          if (checked) {
+                            setForm(prev => ({ ...prev, shippingAddress: prev.billingAddress || "" }))
+                          }
+                        }}
+                      />
+                      Shipping address is same as billing address
+                    </label>
+                  </div>
                   <Textarea
                     placeholder="Full shipping address..."
                     rows={2}
-                    value={form.shippingAddress}
+                    disabled={sameAsBilling}
+                    value={sameAsBilling ? (form.billingAddress || "") : (form.shippingAddress || "")}
                     onChange={(e) => set("shippingAddress", e.target.value)}
                     className="border-slate-200"
                   />

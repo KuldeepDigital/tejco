@@ -18,13 +18,13 @@ import type { Warehouse, ApiWarehouse, Rack } from "@/app/supply-chain/warehouse
 export const serializeAddress = (a?: Address) => a ? `${a.street1}|${a.street2 || ""}|${a.city}|${a.state}|${a.pincode}|${a.country}` : ""
 const deserializeAddress = (s: any): Address => {
   const p = String(s || "").split("|")
-  return { 
-    street1: p[0] || "", 
-    street2: p[1] || "", 
-    city: p[2] || "", 
-    state: p[3] || "", 
-    pincode: p[4] || "", 
-    country: p[5] || "India" 
+  return {
+    street1: p[0] || "",
+    street2: p[1] || "",
+    city: p[2] || "",
+    state: p[3] || "",
+    pincode: p[4] || "",
+    country: p[5] || "India"
   }
 }
 
@@ -70,7 +70,7 @@ export function mapApiClient(raw: ApiClient): Client {
   }
 
   let extra: any = {}
-  
+
   // Handle case where shippingAddress might be a string with JSON or legacy pipe format
   let mainShippingAddress = raw.shippingAddress
   if (typeof raw.shippingAddress === "string" && raw.shippingAddress.includes("|||")) {
@@ -773,6 +773,10 @@ export const quotationsApi = {
   /** POST /api/Quotation/{id}/SendEmail */
   sendEmail: (id: string | number) => apiClient.post<any>(`/api/Quotation/${id}/SendEmail`),
 
+  /** POST /api/Quotation/ConvertToSalesOrder/{id} */
+  convertToSalesOrder: (id: string | number, data?: any) =>
+    apiClient.post<any>(`/api/Quotation/ConvertToSalesOrder/${id}`, data || {}),
+
   /** DELETE /api/Quotation/Delete/{id} */
   remove: (id: string) => apiClient.delete<void>(`/api/Quotation/Delete/${id}`),
 }
@@ -959,7 +963,7 @@ export const categoriesApi = {
 
 export const authApi = {
   /** POST /api/Auth/login */
-  login: (credentials: { username: string; password: string }) => 
+  login: (credentials: { username: string; password: string }) =>
     apiClient.post<any>("/api/Auth/login", credentials),
 }
 
@@ -1332,9 +1336,9 @@ export const orderOutwardApi = {
   getById: (id: number | string) => apiClient.get<ApiOutwardOrder>(`/api/OrderOutward/GetById/${id}`),
   create: (data: Partial<ApiOutwardOrder>) => apiClient.post<any>("/api/OrderOutward/Create", data),
   update: (id: number | string, data: ApiOutwardOrder) => apiClient.put<any>(`/api/OrderOutward/Update/${id}`, data),
-  updateStatus: (id: number | string, newStatus: string, remarks: string) => 
+  updateStatus: (id: number | string, newStatus: string, remarks: string) =>
     apiClient.put<void>(`/api/OrderOutward/${id}/Status`, { newStatus, remarks }),
-  scanBarcode: (id: number | string, data: OutwardScanRequest | { barcode: string }) => 
+  scanBarcode: (id: number | string, data: OutwardScanRequest | { barcode: string }) =>
     apiClient.post<any>(`/api/OrderOutward/${id}/Scan`, data),
   remove: (id: number | string) => apiClient.delete<void>(`/api/OrderOutward/Delete/${id}`),
 }
@@ -1726,6 +1730,11 @@ export const creditNoteApi = {
     return apiClient.get<any>(`/api/CreditNote/ByClient/${clientId}`)
   },
 
+  /** GET /api/CreditNote/ByReturn/{returnId} */
+  getByReturn: async (returnId: number | string) => {
+    return apiClient.get<any>(`/api/CreditNote/ByReturn/${returnId}`)
+  },
+
   /** POST /api/CreditNote/Create */
   create: async (data: any) => {
     return apiClient.post<any>("/api/CreditNote/Create", data)
@@ -1985,6 +1994,317 @@ export const inventoryStockLogsApi = {
     if (params?.endDate) query.append("endDate", params.endDate)
     const qStr = query.toString() ? `?${query.toString()}` : ""
     return apiClient.get<InventoryApiResponse<StockLog[]>>(`/api/Inventory/StockLogs${qStr}`)
+  },
+}
+
+// ---------------------------------------------------------------------------
+// Accounts Invoicing Workflow  →  /api/Accounts
+// ---------------------------------------------------------------------------
+
+export interface InvoicingQueueParams {
+  pageNumber?: number
+  pageSize?: number
+  searchTerm?: string
+  startDate?: string
+  endDate?: string
+  includeInvoiced?: boolean
+}
+
+export interface InvoicingQueueItem {
+  orderId: number
+  orderNumber: string
+  clientId: number
+  clientName: string
+  orderDate: string
+  orderStatus: string
+  status?: string
+  paymentStatus?: string
+  paymentType?: string
+  currencyType?: string
+  subtotal: number
+  gstAmount: number
+  freight: number
+  totalAmount: number
+  invoiceNumber?: string | null
+  invoiceDate?: string | null
+  invoicedBy?: string | null
+  orderNotes?: string | null
+  outwardOrderId?: number | null
+  outwardStatus?: string | null
+  dispatchedDate?: string | null
+  itemsCount?: number
+}
+
+export interface GenerateInvoicePayload {
+  invoiceNumber: string
+  invoiceDate: string
+  freight?: number
+  roundOff?: number
+  remarks?: string
+}
+
+export interface CommercialAdjustPayload {
+  freight?: number
+  roundOff?: number
+  orderNotes?: string
+  shippingAddress?: string
+}
+
+export const accountsApi = {
+  /** GET /api/Accounts/InvoicingQueue */
+  getInvoicingQueue: async (params?: InvoicingQueueParams) => {
+    const query = new URLSearchParams()
+    if (params?.pageNumber) query.append("pageNumber", String(params.pageNumber))
+    if (params?.pageSize) query.append("pageSize", String(params.pageSize))
+    if (params?.searchTerm && params.searchTerm.trim()) query.append("searchTerm", params.searchTerm.trim())
+    if (params?.startDate) query.append("startDate", params.startDate)
+    if (params?.endDate) query.append("endDate", params.endDate)
+    if (params?.includeInvoiced !== undefined) query.append("includeInvoiced", String(params.includeInvoiced))
+
+    const qStr = query.toString() ? `?${query.toString()}` : ""
+    return apiClient.get<{
+      statusCode: number
+      success: boolean
+      message: string
+      data: InvoicingQueueItem[]
+      totalCount: number
+    }>(`/api/Accounts/InvoicingQueue${qStr}`)
+  },
+
+  /** GET /api/Accounts/SalesOrder/Completed */
+  getCompletedSalesOrders: async (params?: Omit<InvoicingQueueParams, "includeInvoiced">) => {
+    const query = new URLSearchParams()
+    if (params?.pageNumber) query.append("pageNumber", String(params.pageNumber))
+    if (params?.pageSize) query.append("pageSize", String(params.pageSize))
+    if (params?.searchTerm && params.searchTerm.trim()) query.append("searchTerm", params.searchTerm.trim())
+    if (params?.startDate) query.append("startDate", params.startDate)
+    if (params?.endDate) query.append("endDate", params.endDate)
+
+    const qStr = query.toString() ? `?${query.toString()}` : ""
+    return apiClient.get<{
+      statusCode: number
+      success: boolean
+      message: string
+      data: InvoicingQueueItem[]
+      totalCount: number
+    }>(`/api/Accounts/SalesOrder/Completed${qStr}`)
+  },
+
+  /** POST /api/Accounts/SalesOrder/{id}/GenerateInvoice */
+  generateInvoice: async (orderId: number | string, data: GenerateInvoicePayload) => {
+    return apiClient.post<{
+      statusCode: number
+      success: boolean
+      message: string
+      data: {
+        orderId: number
+        orderNumber: string
+        invoiceNumber: string
+        invoiceDate: string
+        orderStatus: string
+      }
+    }>(`/api/Accounts/SalesOrder/${orderId}/GenerateInvoice`, data)
+  },
+
+  /** PUT /api/Accounts/SalesOrder/{id}/CommercialAdjust */
+  commercialAdjust: async (orderId: number | string, data: CommercialAdjustPayload) => {
+    return apiClient.put<{
+      statusCode: number
+      success: boolean
+      message: string
+      data: any
+    }>(`/api/Accounts/SalesOrder/${orderId}/CommercialAdjust`, data)
+  },
+}
+
+// ---------------------------------------------------------------------------
+// Return & Replacement Workflow  →  /api/Return
+// ---------------------------------------------------------------------------
+
+export interface ReturnReason {
+  reasonId: number
+  reasonCode: string
+  reasonText: string
+}
+
+export interface ReturnItemDto {
+  returnItemId?: number
+  productId: number
+  productName?: string
+  variantId: number
+  variantName?: string
+  lotId?: number | null
+  lotNumber?: string | null
+  returnQuantity: number
+  unitPrice: number
+  totalPrice?: number
+  itemCondition: "Restockable" | "Quarantine" | "Scrap" | string
+}
+
+export interface ReturnRequestDto {
+  returnId: number
+  returnNumber: string
+  orderId: number
+  orderNumber: string
+  clientId: number
+  clientName: string
+  warehouseId: number
+  warehouseName?: string
+  locationCode?: string
+  returnDate: string
+  reasonId: number
+  reasonText?: string
+  checkedBy: string
+  receivedBy: string
+  status: "Draft" | "Submitted" | "Approved" | "Rejected" | string
+  remarks?: string
+  creditNoteId?: number | null
+  creditNoteNumber?: string | null
+  totalReturnAmount: number
+  itemsCount: number
+  items: ReturnItemDto[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface CreateReturnPayload {
+  orderId: number
+  clientId: number
+  warehouseId: number
+  locationCode: string
+  returnDate: string
+  reasonId: number
+  checkedBy: string
+  receivedBy: string
+  status: "Draft" | "Submitted" | string
+  remarks?: string
+  items: {
+    productId: number
+    variantId: number
+    lotId?: number | null
+    lotNumber?: string | null
+    returnQuantity: number
+    unitPrice: number
+    itemCondition: "Restockable" | "Quarantine" | "Scrap" | string
+  }[]
+}
+
+export interface UpdateReturnPayload {
+  warehouseId: number
+  locationCode: string
+  reasonId: number
+  checkedBy: string
+  receivedBy: string
+  status: "Draft" | "Submitted" | string
+  remarks?: string
+  items: {
+    productId: number
+    variantId: number
+    lotId?: number | null
+    lotNumber?: string | null
+    returnQuantity: number
+    unitPrice: number
+    itemCondition: "Restockable" | "Quarantine" | "Scrap" | string
+  }[]
+}
+
+export interface ReturnGetAllParams {
+  pageNumber?: number
+  pageSize?: number
+  searchTerm?: string
+  status?: string
+  warehouseId?: number
+  startDate?: string
+  endDate?: string
+}
+
+export const returnApi = {
+  /** GET /api/Return/Reasons */
+  getReasons: async () => {
+    return apiClient.get<{
+      statusCode: number
+      success: boolean
+      message: string
+      data: ReturnReason[]
+      totalCount: number
+    }>("/api/Return/Reasons")
+  },
+
+  /** POST /api/Return/Create */
+  create: async (data: CreateReturnPayload) => {
+    return apiClient.post<{
+      statusCode: number
+      success: boolean
+      message: string
+      data: ReturnRequestDto
+    }>("/api/Return/Create", data)
+  },
+
+  /** PUT /api/Return/Update/{id} */
+  update: async (id: number | string, data: UpdateReturnPayload) => {
+    return apiClient.put<{
+      statusCode: number
+      success: boolean
+      message: string
+      data: ReturnRequestDto
+    }>(`/api/Return/Update/${id}`, data)
+  },
+
+  /** GET /api/Return/GetAll */
+  getAll: async (params?: ReturnGetAllParams) => {
+    const query = new URLSearchParams()
+    if (params?.pageNumber) query.append("pageNumber", String(params.pageNumber))
+    if (params?.pageSize) query.append("pageSize", String(params.pageSize))
+    if (params?.searchTerm && params.searchTerm.trim()) query.append("searchTerm", params.searchTerm.trim())
+    if (params?.status && params.status !== "all") query.append("status", params.status)
+    if (params?.warehouseId && String(params.warehouseId) !== "all") query.append("warehouseId", String(params.warehouseId))
+    if (params?.startDate) query.append("startDate", params.startDate)
+    if (params?.endDate) query.append("endDate", params.endDate)
+
+    const qStr = query.toString() ? `?${query.toString()}` : ""
+    return apiClient.get<{
+      statusCode: number
+      success: boolean
+      message: string
+      data: ReturnRequestDto[]
+      totalCount: number
+    }>(`/api/Return/GetAll${qStr}`)
+  },
+
+  /** GET /api/Return/GetById/{id} */
+  getById: async (id: number | string) => {
+    return apiClient.get<{
+      statusCode: number
+      success: boolean
+      message: string
+      data: ReturnRequestDto
+    }>(`/api/Return/GetById/${id}`)
+  },
+
+  /** POST /api/Return/{id}/Approve */
+  approve: async (id: number | string, data?: { remarks?: string }) => {
+    return apiClient.post<{
+      statusCode: number
+      success: boolean
+      message: string
+      data: {
+        returnId: number
+        returnNumber: string
+        status: string
+        creditNoteId: number
+        creditNoteNumber: string
+      }
+    }>(`/api/Return/${id}/Approve`, data || {})
+  },
+
+  /** POST /api/Return/{id}/Reject */
+  reject: async (id: number | string, data?: { remarks?: string }) => {
+    return apiClient.post<{
+      statusCode: number
+      success: boolean
+      message: string
+      data: any
+    }>(`/api/Return/${id}/Reject`, data || {})
   },
 }
 

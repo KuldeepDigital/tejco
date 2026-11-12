@@ -168,7 +168,9 @@ export function ProductSelector({ onSelect, paymentType }: ProductSelectorProps)
                           ? `$${(item.variant.usdAmount ?? 0).toLocaleString()}`
                           : `₹${(item.variant.sellingPrice ?? 0).toLocaleString()}`}
                       </div>
-                      <div className="text-[10px] text-muted-foreground">Stock: {item.variant.currentQuantity ?? 0}</div>
+                      <div className="text-[10px] text-muted-foreground font-medium">
+                        Stock: {(item.variant as any).availableStock ?? (Number(item.variant.currentQuantity || 0) - Number((item.variant as any).reservedQuantity || 0))}
+                      </div>
                     </div>
                   </button>
                 ))}

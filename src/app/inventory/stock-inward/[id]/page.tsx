@@ -168,11 +168,11 @@ export default function StockInwardDetailsPage() {
         const inGenerated = it.generatedBarcodes?.some(gb => (gb || "").toLowerCase().trim() === trimmed.toLowerCase().trim())
 
         const isMatch = b === trimmed.toLowerCase().trim() ||
-                        lb === trimmed.toLowerCase().trim() ||
-                        ln === trimmed.toLowerCase().trim() ||
-                        sku === trimmed.toLowerCase().trim() ||
-                        Boolean(inGenerated) ||
-                        (it.inwardOrderItemId && matchedItem.inwardOrderItemId && it.inwardOrderItemId === matchedItem.inwardOrderItemId)
+          lb === trimmed.toLowerCase().trim() ||
+          ln === trimmed.toLowerCase().trim() ||
+          sku === trimmed.toLowerCase().trim() ||
+          Boolean(inGenerated) ||
+          (it.inwardOrderItemId && matchedItem.inwardOrderItemId && it.inwardOrderItemId === matchedItem.inwardOrderItemId)
 
         if (isMatch && !matchedFound) {
           matchedFound = true
@@ -870,13 +870,12 @@ export default function StockInwardDetailsPage() {
                             </span>
                             <Badge
                               variant="outline"
-                              className={`text-[9px] font-mono px-1.5 py-0 w-fit ${
-                                expiryInfo.status === "valid"
+                              className={`text-[9px] font-mono px-1.5 py-0 w-fit ${expiryInfo.status === "valid"
                                   ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
                                   : expiryInfo.status === "expiring-soon"
-                                  ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30"
-                                  : "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30"
-                              }`}
+                                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30"
+                                    : "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30"
+                                }`}
                             >
                               {expiryInfo.label}
                             </Badge>

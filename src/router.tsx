@@ -126,8 +126,8 @@ export const router = createBrowserRouter([
       { path: "sales/proforma-invoices/:id", element: <ProtectedRoute permission="ProformaInvoices.View"><ProformaDetailsPage /></ProtectedRoute> },
       { path: "sales/orders", element: <ProtectedRoute permission="SalesOrders.View"><OrdersPage /></ProtectedRoute> },
       { path: "sales/orders/:id", element: <ProtectedRoute permission="SalesOrders.View"><OrderDetailsPage /></ProtectedRoute> },
-      // { path: "sales/invoices", element: <ProtectedRoute permission={["Invoices.View", "SalesOrders.View", "ProformaInvoices.View"]}><InvoicesPage /></ProtectedRoute> },
-      // { path: "sales/invoices/:id", element: <ProtectedRoute permission={["Invoices.View", "SalesOrders.View", "ProformaInvoices.View"]}><InvoiceDetailsPage /></ProtectedRoute> },
+      { path: "sales/invoices", element: <ProtectedRoute permission={["Invoices.View", "SalesOrders.View", "Sales.Invoice.Generate"]}><InvoicesPage /></ProtectedRoute> },
+      { path: "sales/invoices/:id", element: <ProtectedRoute permission={["Invoices.View", "SalesOrders.View", "Sales.Invoice.Generate"]}><InvoiceDetailsPage /></ProtectedRoute> },
       { path: "sales/challans", element: <ProtectedRoute permission="SalesOrders.View"><ChallansPage /></ProtectedRoute> },
 
       // Inventory

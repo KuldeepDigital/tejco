@@ -20,7 +20,9 @@ export interface ApiQuotation {
   quotationNumber: string
   quotationDate: string
   clientName: string
-  clientAddress: string
+  clientAddress?: string
+  billingAddress?: string
+  shippingAddress?: string
   clientMobileNo: string
   subject: string
   gstinNo: string
@@ -140,8 +142,8 @@ export function mapApiQuotation(raw: ApiQuotation): Quotation {
     subtotal,
     taxAmount,
     totalAmount,
-    billingAddress: raw.clientAddress,
-    shippingAddress: raw.clientAddress,
+    billingAddress: (raw as any).billingAddress ?? raw.clientAddress ?? "",
+    shippingAddress: (raw as any).shippingAddress ?? (raw as any).billingAddress ?? raw.clientAddress ?? "",
     notes: raw.subject,
     subject: raw.subject,
     clientMobileNo: raw.clientMobileNo,

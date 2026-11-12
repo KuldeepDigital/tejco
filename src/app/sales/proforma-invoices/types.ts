@@ -30,6 +30,7 @@ export interface ApiProforma {
   billingName?: string
   clientName?: string
   billingAddress?: string
+  shippingAddress?: string
   clientAddress?: string
   clientMobileNo?: string
   subject?: string
@@ -72,7 +73,7 @@ export interface ProformaInvoice extends Omit<SalesDocument, 'items'> {
   billingName?: string
   subject: string
   clientMobileNo: string
-  validityDays: number
+  validityDays?: number
   deliveryTime: string
   deliveryTerms?: string
   paymentTerms?: string
@@ -166,7 +167,8 @@ export function mapApiProforma(raw: ApiProforma): ProformaInvoice {
 
   const numberValue = raw.piNo || raw.proformaNumber || `PI-${idValue || "NEW"}`
   const clientNameValue = raw.billingName || raw.clientName || ""
-  const addressValue = raw.billingAddress || raw.clientAddress || ""
+  const billingAddr = raw.billingAddress || raw.clientAddress || ""
+  const shippingAddr = raw.shippingAddress || billingAddr
 
   const rawClientId =
     raw.clientId ??
@@ -195,8 +197,8 @@ export function mapApiProforma(raw: ApiProforma): ProformaInvoice {
     subtotal,
     taxAmount,
     totalAmount: subtotal + taxAmount + (raw.freight || 0),
-    billingAddress: addressValue,
-    shippingAddress: addressValue,
+    billingAddress: billingAddr,
+    shippingAddress: shippingAddr,
     notes: raw.paymentTerms || raw.subject || "",
     subject: raw.subject || raw.paymentTerms || "Proforma Invoice",
     paymentTerms: raw.paymentTerms || raw.subject || "",

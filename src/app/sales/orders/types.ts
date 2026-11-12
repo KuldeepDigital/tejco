@@ -44,6 +44,7 @@ export interface Order {
   proformaId?: string | number
   paymentType?: string
   currencyType?: string
+  sourceLead?: string
 }
 
 export interface ApiSalesOrderItem {
@@ -99,6 +100,7 @@ export interface ApiSalesOrder {
   parentOrderId?: number
   paymentType?: string
   currencyType?: string
+  sourceLead?: string
   createdAt?: string
   updatedAt?: string | null
   lineItems?: ApiSalesOrderItem[]
@@ -229,7 +231,7 @@ export function mapApiSalesOrder(raw: any, clientMap?: Map<string, any>): Order 
     taxAmount,
     totalAmount,
     billingAddress: raw.billingAddress || raw.clientAddress || "",
-    shippingAddress: raw.shippingAddress || raw.clientAddress || "",
+    shippingAddress: raw.shippingAddress || raw.billingAddress || raw.clientAddress || "",
     notes: raw.orderNotes || raw.notes || raw.subject || "",
     doctorSpeciality,
     clientGSTIN,
@@ -239,5 +241,6 @@ export function mapApiSalesOrder(raw: any, clientMap?: Map<string, any>): Order 
     proformaId: raw.linkedProformaInvoiceId || raw.proformaId || undefined,
     paymentType: raw.paymentType || "Domestic",
     currencyType: raw.currencyType || "INR",
+    sourceLead: raw.sourceLead || undefined,
   }
 }

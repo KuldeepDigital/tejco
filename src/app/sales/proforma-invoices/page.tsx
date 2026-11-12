@@ -573,6 +573,7 @@ export default function ProformaInvoicesPage() {
         gstAmount: gstVal,
         freight: freightVal,
         totalAmount: totalVal,
+        sourceLead: "Proforma Invoice",
         paymentType: sourceProforma.paymentType || p.paymentType || "Domestic",
         currencyType: sourceProforma.currencyType || p.currencyType || "INR",
         orderNotes: sourceProforma.notes || (sourceProforma as any).paymentTerms || p.notes || (p as any).paymentTerms || p.subject || "",
@@ -932,7 +933,6 @@ export default function ProformaInvoicesPage() {
                   <TableHead className="w-[170px] py-3.5 px-4 font-semibold text-xs">PI Number</TableHead>
                   <TableHead className="py-3.5 px-4 font-semibold text-xs">Client / Doctor</TableHead>
                   <TableHead className="py-3.5 px-4 font-semibold text-xs">Date</TableHead>
-                  <TableHead className="py-3.5 px-4 font-semibold text-xs">Validity</TableHead>
                   <TableHead className="text-right py-3.5 px-4 font-semibold text-xs">Total Amount</TableHead>
                   <TableHead className="text-center py-3.5 px-4 font-semibold text-xs">Status</TableHead>
                   <TableHead className="text-right py-3.5 px-4 font-semibold text-xs">Actions</TableHead>
@@ -1007,11 +1007,6 @@ export default function ProformaInvoicesPage() {
                       {/* Date */}
                       <TableCell className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">
                         {p.date ? new Date(p.date).toLocaleDateString("en-GB") : "—"}
-                      </TableCell>
-
-                      {/* Validity */}
-                      <TableCell className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">
-                        {p.validUntil ? new Date(p.validUntil).toLocaleDateString("en-GB") : "—"}
                       </TableCell>
 
                       {/* Total Amount */}

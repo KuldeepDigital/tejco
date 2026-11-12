@@ -431,6 +431,7 @@ export function ProformaDetailsView({ proforma: initialProforma }: ProformaDetai
         gstAmount: gstVal,
         freight: freightVal,
         totalAmount: totalVal,
+        sourceLead: "Proforma Invoice",
         paymentType: sourceProforma.paymentType || proforma.paymentType || "Domestic",
         currencyType: sourceProforma.currencyType || proforma.currencyType || "INR",
         orderNotes: sourceProforma.notes || (sourceProforma as any).paymentTerms || proforma.notes || (proforma as any).paymentTerms || proforma.subject || "",
@@ -890,13 +891,13 @@ export function ProformaDetailsView({ proforma: initialProforma }: ProformaDetai
                   <div className="flex flex-col">
                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5">Shipping Destination</Label>
                     <div className="p-3 bg-slate-50/50 rounded-xl border border-slate-100 text-[11px] font-bold text-slate-700 leading-relaxed italic">
-                      {renderAddressLines(proforma.shippingAddress)}
+                      {renderAddressLines(proforma.shippingAddress || "")}
                     </div>
                   </div>
                   <div className="flex flex-col">
                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5">Billing Address</Label>
                     <div className="p-3 bg-slate-50/50 rounded-xl border border-slate-100 text-[11px] font-bold text-slate-700 leading-relaxed italic">
-                      {renderAddressLines(proforma.billingAddress)}
+                      {renderAddressLines(proforma.billingAddress || "")}
                     </div>
                   </div>
                 </div>
@@ -1034,10 +1035,6 @@ export function ProformaDetailsView({ proforma: initialProforma }: ProformaDetai
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-slate-600 font-medium">Date:</span>
                   <span className="font-bold text-slate-900">{formatDateWithDots(proforma.date)}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-600 font-medium">Validity:</span>
-                  <span className="font-bold text-slate-900">{proforma.validityDays || 7} Days</span>
                 </div>
                 {linkedQuotationNumber && (
                   <div className="flex justify-between items-center text-xs">

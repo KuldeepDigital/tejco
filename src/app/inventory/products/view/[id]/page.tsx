@@ -79,8 +79,11 @@ import {
 import { BarcodeDisplay } from "@/components/ui/barcode-display"
 import { BarcodePrintModal } from "@/components/inventory/barcode-print-modal"
 import { LotBarcodePrintModal } from "@/components/inventory/lot-barcode-print-modal"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function ViewProductPage() {
+    const { user } = useAuth()
+    const isSalesPerson = user?.roleId === 3 || String(user?.roleId) === "3" || user?.role?.toLowerCase() === "sales person"
     const navigate = useNavigate()
     const params = useParams()
     const [isLoading, setIsLoading] = React.useState(true)
@@ -322,7 +325,7 @@ export default function ViewProductPage() {
     }
 
     const fetchLotsForVariant = React.useCallback(async (variantId: number, force = false) => {
-        if (!variantId) return
+        if (isSalesPerson || !variantId) return
         if (!force && variantLotsMap[variantId] !== undefined) return
 
         try {
@@ -364,9 +367,9 @@ export default function ViewProductPage() {
         setExpandedLots(next)
     }
 
-    // Auto-fetch lots for all variants once product data is loaded
+    // Auto-fetch lots for all variants once product data is loaded (authorized roles only)
     React.useEffect(() => {
-        if (!product?.variants || !Array.isArray(product.variants) || product.variants.length === 0) return
+        if (isSalesPerson || !product?.variants || !Array.isArray(product.variants) || product.variants.length === 0) return
 
         product.variants.forEach((v: any) => {
             if (v.variantId && variantLotsMap[v.variantId] === undefined) {
@@ -574,12 +577,14 @@ export default function ViewProductPage() {
                                             )}
                                         </div>
                                     </div>
-                                    <div>
-                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vendor Name</p>
-                                        <p className="text-sm font-medium mt-1 text-slate-800 dark:text-slate-200">
-                                            {product.vendorName || product.VendorName || "—"}
-                                        </p>
-                                    </div>
+                                    {!isSalesPerson && (
+                                        <div>
+                                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vendor Name</p>
+                                            <p className="text-sm font-medium mt-1 text-slate-800 dark:text-slate-200">
+                                                {product.vendorName || product.VendorName || "—"}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Description</p>
@@ -696,22 +701,24 @@ export default function ViewProductPage() {
                                             Table
                                         </Button>
                                     </div>
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        className="h-8.5 px-2.5 text-xs gap-1.5 bg-background/90 border-slate-200 dark:border-slate-800 shadow-2xs hover:bg-muted/60"
-                                        onClick={() => {
-                                            const anyExpanded = Object.values(expandedLots).some(Boolean)
-                                            toggleAllLots(!anyExpanded)
-                                        }}
-                                        title={Object.values(expandedLots).some(Boolean) ? "Collapse all lot breakdowns" : "Expand all lot breakdowns"}
-                                    >
-                                        <Boxes className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-                                        <span className="hidden sm:inline">
-                                            {Object.values(expandedLots).some(Boolean) ? "Collapse Lots" : "Expand Lots"}
-                                        </span>
-                                    </Button>
+                                    {!isSalesPerson && (
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-8.5 px-2.5 text-xs gap-1.5 bg-background/90 border-slate-200 dark:border-slate-800 shadow-2xs hover:bg-muted/60"
+                                            onClick={() => {
+                                                const anyExpanded = Object.values(expandedLots).some(Boolean)
+                                                toggleAllLots(!anyExpanded)
+                                            }}
+                                            title={Object.values(expandedLots).some(Boolean) ? "Collapse all lot breakdowns" : "Expand all lot breakdowns"}
+                                        >
+                                            <Boxes className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                                            <span className="hidden sm:inline">
+                                                {Object.values(expandedLots).some(Boolean) ? "Collapse Lots" : "Expand Lots"}
+                                            </span>
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
 
@@ -1031,30 +1038,35 @@ export default function ViewProductPage() {
                                                                         GST: {v.gstPercentage || 0}%
                                                                     </span>
                                                                 </div>
-                                                                <div className="pt-1.5 border-t border-emerald-200/60 dark:border-emerald-800/40 mt-1.5 flex items-center justify-between text-[11px]">
-                                                                    <span className="text-emerald-800 dark:text-emerald-300 font-medium">Export:</span>
-                                                                    <span className="font-bold text-emerald-700 dark:text-emerald-400">
-                                                                        ${v.usdAmount || v.exportSellingPrice || 0}
-                                                                    </span>
-                                                                </div>
+                                                                {!isSalesPerson && (
+                                                                    <div className="pt-1.5 border-t border-emerald-200/60 dark:border-emerald-800/40 mt-1.5 flex items-center justify-between text-[11px]">
+                                                                        <span className="text-emerald-800 dark:text-emerald-300 font-medium">Export:</span>
+                                                                        <span className="font-bold text-emerald-700 dark:text-emerald-400">
+                                                                            ${v.usdAmount || v.exportSellingPrice || 0}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
                                                             </div>
 
                                                             {/* Cost Price */}
-                                                            <div className="p-2.5 rounded-xl border bg-muted/30 flex flex-col justify-between">
-                                                                <div>
-                                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                                                        Cost Price
-                                                                    </span>
-                                                                    <div className="text-sm font-semibold text-foreground mt-0.5">
-                                                                        {formatCurrency(v.purchasePrice)}
+                                                            {!isSalesPerson && (
+                                                                <div className="p-2.5 rounded-xl border bg-muted/30 flex flex-col justify-between">
+                                                                    <div>
+                                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                                                            Cost Price
+                                                                        </span>
+                                                                        <div className="text-sm font-semibold text-foreground mt-0.5">
+                                                                            {formatCurrency(v.purchasePrice)}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
 
                                                 {/* Lot-wise Stocks Breakdown */}
+                                                {!isSalesPerson && (
                                                 <div className="border-t bg-muted/10">
                                                     <div
                                                         className="px-4 py-2.5 flex items-center justify-between cursor-pointer select-none hover:bg-muted/30 transition-colors"
@@ -1228,6 +1240,7 @@ export default function ViewProductPage() {
                                                         </div>
                                                     )}
                                                 </div>
+                                                )}
 
                                                 {/* Card Footer with Barcode Strip & Print Options */}
                                                 <div className="p-3 border-t bg-muted/15 flex items-center justify-between text-xs flex-wrap gap-2">
@@ -1361,10 +1374,10 @@ export default function ViewProductPage() {
                                                 <TableHead>Variation & SKU</TableHead>
                                                 <TableHead>Size</TableHead>
                                                 <TableHead>Stock Level</TableHead>
-                                                <TableHead className="text-right">Cost</TableHead>
+                                                {!isSalesPerson && <TableHead className="text-right">Cost</TableHead>}
                                                 <TableHead className="text-right">Sale (IND)</TableHead>
-                                                <TableHead className="text-right">Export (USD)</TableHead>
-                                                <TableHead>Location</TableHead>
+                                                {!isSalesPerson && <TableHead className="text-right">Export (USD)</TableHead>}
+                                                {!isSalesPerson && <TableHead>Location</TableHead>}
                                                 <TableHead>Barcode</TableHead>
                                                 <TableHead className="text-center">Status</TableHead>
                                             </TableRow>
@@ -1445,34 +1458,38 @@ export default function ViewProductPage() {
                                                                     </div>
                                                                     <div className="flex items-center gap-2 flex-wrap">
                                                                         <span className="text-[10px] text-muted-foreground">Reorder: {reorder}</span>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => toggleExpandLots(v.variantId)}
-                                                                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 transition-colors cursor-pointer"
-                                                                            title="View lot-wise breakdown"
-                                                                        >
-                                                                            <Boxes className="h-3 w-3" />
-                                                                            <span>
-                                                                                {isLotsLoading
-                                                                                    ? "..."
-                                                                                    : lots
-                                                                                        ? `${lots.length} Lot${lots.length === 1 ? "" : "s"}`
-                                                                                        : "Lots"}
-                                                                            </span>
-                                                                            {isExpanded ? (
-                                                                                <ChevronUp className="h-3 w-3" />
-                                                                            ) : (
-                                                                                <ChevronDown className="h-3 w-3" />
-                                                                            )}
-                                                                        </button>
+                                                                        {!isSalesPerson && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => toggleExpandLots(v.variantId)}
+                                                                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 transition-colors cursor-pointer"
+                                                                                title="View lot-wise breakdown"
+                                                                            >
+                                                                                <Boxes className="h-3 w-3" />
+                                                                                <span>
+                                                                                    {isLotsLoading
+                                                                                        ? "..."
+                                                                                        : lots
+                                                                                            ? `${lots.length} Lot${lots.length === 1 ? "" : "s"}`
+                                                                                            : "Lots"}
+                                                                                </span>
+                                                                                {isExpanded ? (
+                                                                                    <ChevronUp className="h-3 w-3" />
+                                                                                ) : (
+                                                                                    <ChevronDown className="h-3 w-3" />
+                                                                                )}
+                                                                            </button>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             </TableCell>
 
                                                             {/* Cost Price */}
-                                                            <TableCell className="text-right text-xs">
-                                                                {formatCurrency(v.purchasePrice)}
-                                                            </TableCell>
+                                                            {!isSalesPerson && (
+                                                                <TableCell className="text-right text-xs">
+                                                                    {formatCurrency(v.purchasePrice)}
+                                                                </TableCell>
+                                                            )}
 
                                                             {/* Sale Price IND */}
                                                             <TableCell className="text-right">
@@ -1480,7 +1497,7 @@ export default function ViewProductPage() {
                                                                     <span className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
                                                                         {formatCurrency(v.sellingPrice)}
                                                                     </span>
-                                                                    {margin !== null && (
+                                                                    {!isSalesPerson && margin !== null && (
                                                                         <span className="text-[10px] font-semibold text-emerald-600">
                                                                             +{margin}% margin
                                                                         </span>
@@ -1489,17 +1506,21 @@ export default function ViewProductPage() {
                                                             </TableCell>
 
                                                             {/* Export Price USD */}
-                                                            <TableCell className="text-right text-xs font-semibold">
-                                                                ${v.usdAmount || v.exportSellingPrice || 0}
-                                                            </TableCell>
+                                                            {!isSalesPerson && (
+                                                                <TableCell className="text-right text-xs font-semibold">
+                                                                    ${v.usdAmount || v.exportSellingPrice || 0}
+                                                                </TableCell>
+                                                            )}
 
                                                             {/* Warehouse & Rack */}
-                                                            <TableCell className="text-xs">
-                                                                <div className="flex flex-col text-slate-700 dark:text-slate-300">
-                                                                    <span className="font-medium truncate max-w-[120px]">{warehousesMap[v.warehouseId] || "Main"}</span>
-                                                                    <span className="text-[10px] text-muted-foreground">Rack: {v.rackLocation || "—"}</span>
-                                                                </div>
-                                                            </TableCell>
+                                                            {!isSalesPerson && (
+                                                                <TableCell className="text-xs">
+                                                                    <div className="flex flex-col text-slate-700 dark:text-slate-300">
+                                                                        <span className="font-medium truncate max-w-[120px]">{warehousesMap[v.warehouseId] || "Main"}</span>
+                                                                        <span className="text-[10px] text-muted-foreground">Rack: {v.rackLocation || "—"}</span>
+                                                                    </div>
+                                                                </TableCell>
+                                                            )}
 
                                                             {/* Barcode */}
                                                             <TableCell className="text-xs">
@@ -1542,7 +1563,7 @@ export default function ViewProductPage() {
                                                         </TableRow>
 
                                                         {/* Expandable Sub-Row for Variant Lots Breakdown */}
-                                                        {isExpanded && (
+                                                        {!isSalesPerson && isExpanded && (
                                                             <TableRow className="bg-indigo-50/20 dark:bg-indigo-950/20 hover:bg-indigo-50/20 dark:hover:bg-indigo-950/20 border-b">
                                                                 <TableCell colSpan={10} className="p-0">
                                                                     <div className="p-4 pl-12 border-l-4 border-indigo-500 bg-background/60 dark:bg-card/60">

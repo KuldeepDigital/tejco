@@ -35,6 +35,7 @@ export function QuotationFormDialog({ open, onOpenChange, quotation, onSave }: Q
   const [users, setUsers] = useState<any[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [currencies, setCurrencies] = useState<string[]>(["USD", "EUR", "GBP"])
+  const [sameAsBilling, setSameAsBilling] = useState<boolean>(true)
 
   useEffect(() => {
     const fetchCurrencies = async () => {
@@ -89,6 +90,8 @@ export function QuotationFormDialog({ open, onOpenChange, quotation, onSave }: Q
 
   useEffect(() => {
     if (quotation) {
+      const isSame = !quotation.shippingAddress || quotation.shippingAddress === quotation.billingAddress
+      setSameAsBilling(isSame)
       setForm({
         ...quotation,
         quotationId: quotation.quotationId || (quotation.id && !isNaN(Number(quotation.id)) ? Number(quotation.id) : 0),
@@ -101,6 +104,7 @@ export function QuotationFormDialog({ open, onOpenChange, quotation, onSave }: Q
         deliveryTime: quotation.deliveryTime || "10-15 Working Days",
       })
     } else {
+      setSameAsBilling(true)
       const year = new Date().getFullYear()
       const random = Math.floor(1000 + Math.random() * 9000)
       const currentUserName = user?.name || `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || ""
@@ -360,7 +364,9 @@ export function QuotationFormDialog({ open, onOpenChange, quotation, onSave }: Q
           ? new Date(form.quotationDate).toISOString()
           : (form.date ? new Date(form.date).toISOString() : new Date().toISOString()),
         clientName: form.clientName || "",
-        clientAddress: form.clientAddress || form.billingAddress || form.shippingAddress || "",
+        billingAddress: form.billingAddress || form.clientAddress || "",
+        shippingAddress: sameAsBilling ? (form.billingAddress || "") : (form.shippingAddress || form.billingAddress || form.clientAddress || ""),
+        clientAddress: form.billingAddress || form.clientAddress || form.shippingAddress || "",
         clientMobileNo: form.clientMobileNo || quotation?.clientMobileNo || "",
         subject: form.subject || "",
         gstinNo: form.gstinNo || "",
@@ -483,11 +489,15 @@ export function QuotationFormDialog({ open, onOpenChange, quotation, onSave }: Q
                   selectedClientId={form.clientId}
                   selectedClientName={form.clientName}
                   onSelect={(c) => {
+                    const bAddr = serializeAddress(c.billingAddress)
+                    const sAddr = serializeAddress(c.shippingAddress)
+                    const isSame = !sAddr || sAddr === bAddr
+                    setSameAsBilling(isSame)
                     set("clientId", c.id)
                     set("clientName", c.name)
                     set("clientMobileNo", c.phone || "")
-                    set("billingAddress", serializeAddress(c.billingAddress))
-                    set("shippingAddress", serializeAddress(c.shippingAddress))
+                    set("billingAddress", bAddr)
+                    set("shippingAddress", isSame ? bAddr : sAddr)
                     set("gstinNo", c.gstin)
                     set("doctorSpeciality", Array.isArray(c.doctorSpeciality) ? c.doctorSpeciality.join(", ") : (c.doctorSpeciality || (c as any).speciality || (c as any).clientType || form.doctorSpeciality || ""))
                     set("doctorName", (c as any).doctorName || c.contactPerson || (c.clientType === "Doctor" ? c.name : form.doctorName || ""))
@@ -729,15 +739,40 @@ export function QuotationFormDialog({ open, onOpenChange, quotation, onSave }: Q
                     placeholder="Full billing address..."
                     rows={2}
                     value={form.billingAddress || ""}
-                    onChange={(e) => set("billingAddress", e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setForm(prev => ({
+                        ...prev,
+                        billingAddress: val,
+                        ...(sameAsBilling ? { shippingAddress: val } : {})
+                      }))
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Shipping Address</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>Shipping Address</Label>
+                    <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-primary focus:ring-primary h-3.5 w-3.5"
+                        checked={sameAsBilling}
+                        onChange={(e) => {
+                          const checked = e.target.checked
+                          setSameAsBilling(checked)
+                          if (checked) {
+                            setForm(prev => ({ ...prev, shippingAddress: prev.billingAddress || "" }))
+                          }
+                        }}
+                      />
+                      Shipping address is same as billing address
+                    </label>
+                  </div>
                   <Textarea
                     placeholder="Full shipping address..."
                     rows={2}
-                    value={form.shippingAddress || ""}
+                    disabled={sameAsBilling}
+                    value={sameAsBilling ? (form.billingAddress || "") : (form.shippingAddress || "")}
                     onChange={(e) => set("shippingAddress", e.target.value)}
                   />
                 </div>

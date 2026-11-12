@@ -98,7 +98,7 @@ const data: { navMain: NavItem[] } = {
                 { title: "Quotations", url: "/sales/quotations", permission: "Quotations.View" },
                 { title: "Proforma Invoices", url: "/sales/proforma-invoices", permission: "ProformaInvoices.View" },
                 { title: "Sales Order", url: "/sales/orders", permission: "SalesOrders.View" },
-                // { title: "Invoices", url: "/sales/invoices", permission: ["Invoices.View", "SalesOrders.View", "ProformaInvoices.View"] },
+                { title: "Invoices", url: "/sales/invoices", permission: ["Invoices.View", "SalesOrders.View", "Sales.Invoice.Generate"] },
             ],
         },
         {
@@ -107,6 +107,7 @@ const data: { navMain: NavItem[] } = {
             icon: RotateCcw,
             permission: "GoodsReturn.View",
             items: [
+                { title: "Return Requests", url: "/goods-return", permission: "GoodsReturn.View" },
                 { title: "Credit Notes", url: "/goods-return/credit-notes", permission: "GoodsReturn.View" },
             ],
         },

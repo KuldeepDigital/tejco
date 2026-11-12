@@ -120,6 +120,14 @@ export const Permissions = {
   GOODS_RETURN_CREATE: "GoodsReturn.Create",
   GOODS_RETURN_EDIT: "GoodsReturn.Edit",
   GOODS_RETURN_DELETE: "GoodsReturn.Delete",
+  RETURNS_APPROVE: "Returns.Approve",
+
+  // Invoicing & Commercial
+  SALES_INVOICE_GENERATE: "Sales.Invoice.Generate",
+  SALES_COMMERCIAL_EDIT: "Sales.Commercial.Edit",
+
+  // Inventory Lots View
+  INVENTORY_LOTS_VIEW: "Inventory.Lots.View",
 
   // Backward compatibility / UI convenience aliases
   SYSTEM_USERS_VIEW: "Users.View",
@@ -347,6 +355,25 @@ const PERMISSION_EQUIVALENTS: Record<string, string[]> = {
     "goodsreturn.edit",
     "goodsreturn.delete",
     "creditnotes.view",
+    "returns.approve",
+  ],
+  "returns.approve": [
+    "returns.approve",
+    "goodsreturn.edit",
+  ],
+  "sales.invoice.generate": [
+    "sales.invoice.generate",
+    "salesorders.edit",
+    "salesorders.approve",
+  ],
+  "sales.commercial.edit": [
+    "sales.commercial.edit",
+    "salesorders.edit",
+  ],
+  "inventory.lots.view": [
+    "inventory.lots.view",
+    "inventory.view",
+    "products.fullview",
   ],
   "salesdashboard.view": [
     "salesdashboard.view",

@@ -438,9 +438,8 @@ export function LotBarcodePrintModal({
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
-            ${
-              isSheet
-                ? `
+            ${isSheet
+        ? `
               .sheet-container {
                 display: grid;
                 grid-template-columns: repeat(${currentPreset.columns || 3}, ${labelWidth}mm);
@@ -461,7 +460,7 @@ export function LotBarcodePrintModal({
                 border: 0.2mm dashed #e2e8f0;
               }
             `
-                : `
+        : `
               .label-card {
                 width: ${labelWidth}mm;
                 height: ${labelHeight}mm;
@@ -475,7 +474,7 @@ export function LotBarcodePrintModal({
                 overflow: hidden;
               }
             `
-            }
+      }
             .comp-name {
               font-size: ${labelHeight <= 18 ? "4.5pt" : "6.5pt"};
               font-weight: 800;
@@ -542,18 +541,17 @@ export function LotBarcodePrintModal({
           </style>
         </head>
         <body>
-          ${
-            isSheet ? `<div class="sheet-container">` : ""
-          }
+          ${isSheet ? `<div class="sheet-container">` : ""
+      }
           ${flatLabels
-            .map(lbl => {
-              const encoded = encodeCode128B(lbl.barcode)
-              const rects = encoded.bars
-                .map(b => `<rect x="${b.x}" y="0" width="${b.width}" height="32" fill="#000" />`)
-                .join("")
-              const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${encoded.totalWidth} 32" preserveAspectRatio="none">${rects}</svg>`
+        .map(lbl => {
+          const encoded = encodeCode128B(lbl.barcode)
+          const rects = encoded.bars
+            .map(b => `<rect x="${b.x}" y="0" width="${b.width}" height="32" fill="#000" />`)
+            .join("")
+          const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${encoded.totalWidth} 32" preserveAspectRatio="none">${rects}</svg>`
 
-              return `
+          return `
                 <div class="label-card">
                   <div style="width: 100%; display: flex; flex-direction: column; align-items: center;">
                     ${includeCompany ? `<div class="comp-name">${companyName || "TEJCO GLOBAL LLP"}</div>` : ""}
@@ -571,20 +569,19 @@ export function LotBarcodePrintModal({
                     <span>${includeLotNumber ? `LOT: <span class="bold">${lbl.lotNumber}</span>` : (includeSku ? lbl.sku : "")}</span>
                     <span>${includeExpiry ? `EXP: <span class="bold">${lbl.expiryDate}</span>` : ""}</span>
                   </div>
-                  ${
-                    includeLocation && (lbl.rack || lbl.warehouse)
-                      ? `
+                  ${includeLocation && (lbl.rack || lbl.warehouse)
+              ? `
                     <div class="meta-row" style="font-size: 5pt; color: #555;">
                       <span>${lbl.warehouse}</span>
                       <span>${lbl.rack ? `Rack: ${lbl.rack}` : ""}</span>
                     </div>
                   `
-                      : ""
-                  }
+              : ""
+            }
                 </div>
               `
-            })
-            .join("")}
+        })
+        .join("")}
           ${isSheet ? `</div>` : ""}
           <script>
             window.onload = function() {
@@ -815,11 +812,10 @@ export function LotBarcodePrintModal({
                     <div
                       key={lot.lotId}
                       onClick={() => setActivePreviewLotId(lot.lotId)}
-                      className={`p-2.5 rounded-lg border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
-                        isCurrent
+                      className={`p-2.5 rounded-lg border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${isCurrent
                           ? "border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/30 shadow-2xs"
                           : "border-border bg-card hover:bg-muted/30"
-                      }`}
+                        }`}
                     >
                       {/* Checkbox & Lot Information */}
                       <div className="flex items-start gap-2.5 min-w-0">
@@ -986,11 +982,10 @@ export function LotBarcodePrintModal({
                 <button
                   type="button"
                   onClick={() => setPreviewMode("visual")}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
-                    previewMode === "visual"
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${previewMode === "visual"
                       ? "bg-background text-foreground shadow-2xs font-bold"
                       : "text-muted-foreground hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   <Eye className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
                   <span>Sticker</span>
@@ -998,11 +993,10 @@ export function LotBarcodePrintModal({
                 <button
                   type="button"
                   onClick={() => setPreviewMode("prn")}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
-                    previewMode === "prn"
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${previewMode === "prn"
                       ? "bg-background text-indigo-700 dark:text-indigo-300 shadow-2xs font-bold"
                       : "text-muted-foreground hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   <Terminal className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
                   <span>Raw .PRN</span>
@@ -1138,22 +1132,20 @@ export function LotBarcodePrintModal({
                       <button
                         type="button"
                         onClick={() => setPrnScope("active")}
-                        className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-                          prnScope === "active"
+                        className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${prnScope === "active"
                             ? "bg-indigo-600 text-white font-semibold"
                             : "text-muted-foreground hover:text-foreground"
-                        }`}
+                          }`}
                       >
                         Active Lot
                       </button>
                       <button
                         type="button"
                         onClick={() => setPrnScope("batch")}
-                        className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-                          prnScope === "batch"
+                        className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${prnScope === "batch"
                             ? "bg-indigo-600 text-white font-semibold"
                             : "text-muted-foreground hover:text-foreground"
-                        }`}
+                          }`}
                       >
                         All Lots ({totalLabelsToPrint})
                       </button>
